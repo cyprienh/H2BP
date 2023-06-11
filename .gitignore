@@ -1,0 +1,83 @@
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+\#*
+.#*
+.gdb_history
+.nfs*
+*~
+*.tidy
+*.old
+*.gz
+*.gz.uu
+*.html
+*.info
+*.log
+*.1
+.*.swp
+*.tmp
+*.tex
+*.pdf
+/Makefile
+/.ccache
+/artifact/
+README
+TAGS
+autom4te.cache
+compile_commands.json
+config.cache
+config.status
+configure
+dddrun*
+doxygen-doc
+gdbrun*
+gmon.out
+ncverilog.history
+internals.txt
+verilator.txt
+verilator_bin*
+verilator_coverage_bin*
+verilator.pc
+verilator-config.cmake
+verilator-config-version.cmake
+**/__pycache__/*
+**/_build/*
+**/obj_dir/*
+/.vscode/
