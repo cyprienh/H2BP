@@ -14,10 +14,19 @@ module imem import h2bp::*;(
             1:  instruction <= 32'b0;
             2:  instruction <= 32'b0;
             3:  instruction <= 32'b0;
-            4:  instruction <= 32'b0;
+            4:  instruction <= 32'b00001000110001110101010101010101;
             5:  instruction <= 32'b0;
             6:  instruction <= 32'b0;
             7:  instruction <= 32'b0;
+            8:  instruction <= 32'b10000000010001100000000000001110;
+            9:  instruction <= 32'b0;
+            10: instruction <= 32'b0;
+            11: instruction <= 32'b0;
+            12: instruction <= 32'b0;
+            13: instruction <= 32'b0;
+            14: instruction <= 32'b0;
+            15: instruction <= 32'b0;
+            default: instruction <= 32'b0;
         endcase
     end
 

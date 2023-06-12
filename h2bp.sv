@@ -18,6 +18,10 @@ package h2bp;
     } instructions;
 
     typedef enum logic [2:0] {
+        EQ, NE, LT, GT, LE, GE
+    } conditions;
+
+    typedef enum logic [2:0] {
         opADD, opSUB, opMULT, opDIV, opAND, opOR, opLSHIFT, opRSHIFT
     } operations;
 

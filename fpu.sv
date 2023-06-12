@@ -31,7 +31,9 @@ module fpu import h2bp::*;(
     //   25  |  24  | 23                            0
     logic[24:0] sum_intermediate;
     logic[24:0] sum_unsigned;
+    /* verilator lint_off UNUSEDSIGNAL */
     logic[24:0] fraction_final;
+    /* verilator lint_on UNUSEDSIGNAL */
 
     logic[7:0]  exponent;
 
@@ -98,7 +100,6 @@ module fpu import h2bp::*;(
             fraction_final = sum_unsigned;
             sum_result.exponent = exponent;
         end
-        $display("%0h", fraction_final);
     end
 
     logic found;

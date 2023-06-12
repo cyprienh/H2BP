@@ -1,4 +1,4 @@
-// TODO: BRANCH, MOV, CALL/RET, PUSH/POP + Forwarding/stalling
+// TODO: MOV, CALL/RET, PUSH/POP + Forwarding/stalling on branches and hazards
 
 module path import h2bp::*;(
     input   logic       clk,
@@ -29,6 +29,8 @@ module path import h2bp::*;(
     logic       is_load_inst;
     logic       is_store_inst;
 
+    logic[2:0]  condition_inst;
+
     // Register stage
     logic[4:0]  rd_addr_reg;
     logic[4:0]  rs1_addr_reg;
@@ -58,8 +60,12 @@ module path import h2bp::*;(
 
     logic[4:0]  result_addr_reg;
 
+    logic[2:0]  condition_reg;
+
     // Function stage
     logic[2:0]  op_func;
+
+    logic[31:0] imm_func;
 
     logic       use_alu_func;
     logic       use_fpu_func;
@@ -77,6 +83,13 @@ module path import h2bp::*;(
     logic       is_load_func;
     logic       is_store_func;
 
+    /* verilator lint_off UNUSEDSIGNAL */
+    flags       alu_flags;
+    /* verilator lint_on UNUSEDSIGNAL */
+
+    logic[2:0]  condition_func;
+    logic       branch_func;
+
     // Data stage
 
     logic[4:0]  result_addr_data;
@@ -89,10 +102,16 @@ module path import h2bp::*;(
     logic       is_load_data;
     logic       is_store_data;
 
+    initial condition_inst = 3'b111;
+    initial condition_reg  = 3'b111;
+    initial condition_func = 3'b111;
+
 
     always_ff @(posedge clk) begin : pc_generation
         if(rst) begin
             pc <= 32'b0;
+        end else if(branch_func) begin
+            pc <= pc + imm_func;
         end else begin
             pc <= pc + 1;
         end
@@ -119,7 +138,8 @@ module path import h2bp::*;(
         .result_enable      (result_enable_inst),
         .rd_is_operand_a    (rd_is_operand_a_inst),
         .is_load            (is_load_inst),
-        .is_store           (is_store_inst)
+        .is_store           (is_store_inst),
+        .condition          (condition_inst)
     );
 
     always_ff @(posedge clk) begin : inst_reg
@@ -138,6 +158,7 @@ module path import h2bp::*;(
             rd_is_operand_a_reg     <= 1'b0;
             is_load_reg             <= 1'b0;
             is_store_reg            <= 1'b0;
+            condition_reg           <= 3'b111;
         end else begin
             rd_addr_reg             <= rd_addr_inst;
             rs1_addr_reg            <= rs1_addr_inst;
@@ -153,6 +174,7 @@ module path import h2bp::*;(
             rd_is_operand_a_reg     <= rd_is_operand_a_inst;
             is_load_reg             <= is_load_inst;
             is_store_reg            <= is_store_inst;
+            condition_reg           <= condition_inst;
         end
     end 
 
@@ -176,6 +198,7 @@ module path import h2bp::*;(
     always_ff @(posedge clk) begin : reg_func
         if(rst) begin
             op_func             <= 3'b0;
+            imm_reg             <= 32'b0;
             use_alu_func        <= 1'b0;
             use_fpu_func        <= 1'b0;
             result_addr_func    <= 5'b0;
@@ -184,8 +207,10 @@ module path import h2bp::*;(
             operand_b_func      <= 32'b0;
             is_load_func        <= 1'b0;
             is_store_func       <= 1'b0;
+            condition_func      <= 3'b111;
         end else begin
             op_func             <= op_reg;
+            imm_func            <= imm_reg;
             use_alu_func        <= use_alu_reg;
             use_fpu_func        <= use_fpu_reg;
             result_addr_func    <= result_addr_reg;
@@ -194,6 +219,7 @@ module path import h2bp::*;(
             operand_b_func      <= (use_imm_reg) ? imm_reg : operand_b_reg;
             is_load_func        <= is_load_reg;
             is_store_func       <= is_store_reg;
+            condition_func      <= condition_reg;
         end
     end 
 
@@ -201,7 +227,8 @@ module path import h2bp::*;(
         .operation(op_func),
         .operand_a(operand_a_func),
         .operand_b(operand_b_func),
-        .result   (result_alu)
+        .result   (result_alu),
+        .alu_flags
     );
 
     fpu fpu(
@@ -210,6 +237,22 @@ module path import h2bp::*;(
         .operand_b(operand_b_func),
         .result   (result_fpu)
     );
+
+    always_comb begin : branch
+        branch_func = 1'b0;
+        if(condition_func == EQ && alu_flags.zero)
+            branch_func = 1'b1;
+        else if(condition_func == NE && !alu_flags.zero)
+            branch_func = 1'b1;
+        else if(condition_func == GT && !alu_flags.negative && !alu_flags.zero)
+            branch_func = 1'b1;
+        else if(condition_func == LT && alu_flags.negative && !alu_flags.zero)
+            branch_func = 1'b1;
+        else if(condition_func == GE && (!alu_flags.negative || alu_flags.zero))
+            branch_func = 1'b1;
+        else if(condition_func == LE && (alu_flags.negative || !alu_flags.zero))
+            branch_func = 1'b1;
+    end
 
     always_comb begin : result_select
         result_func = 32'b0;
