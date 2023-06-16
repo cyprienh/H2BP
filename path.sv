@@ -90,22 +90,26 @@ module path import h2bp::*;(
     logic[2:0]  condition_func;
     logic       branch_func;
 
+    logic       use_imm_func;
+
+    logic[4:0]  operand_a_addr_func;
+    logic[4:0]  operand_b_addr_func;
+
     // Data stage
 
     logic[4:0]  result_addr_data;
     logic       result_enable_data;
     logic[31:0] result_data;
 
-    logic[31:0] operand_a_data;
+    //logic[31:0] operand_a_data;
     logic[31:0] result_load_data;
 
     logic       is_load_data;
-    logic       is_store_data;
+    //logic       is_store_data;
 
     initial condition_inst = 3'b111;
     initial condition_reg  = 3'b111;
     initial condition_func = 3'b111;
-
 
     always_ff @(posedge clk) begin : pc_generation
         if(rst) begin
@@ -192,8 +196,15 @@ module path import h2bp::*;(
         .result_addr      (result_addr_data),
         .operand_a        (operand_a_reg),
         .operand_b        (operand_b_reg),
-        .result           ((is_load_data) ? result_load_data : result_data)
+        .result           ((is_load_data) ? result_load_data : result_data),
+        .result_addr_func,
+        .result_addr_data,
+        .result_func,
+        .result_data
     );
+
+    assign operand_a_func = operand_a_reg;
+    assign operand_b_func = (use_imm_func) ? imm_func : operand_b_reg;
 
     always_ff @(posedge clk) begin : reg_func
         if(rst) begin
@@ -203,11 +214,14 @@ module path import h2bp::*;(
             use_fpu_func        <= 1'b0;
             result_addr_func    <= 5'b0;
             result_enable_func  <= 1'b0;
-            operand_a_func      <= 32'b0;
-            operand_b_func      <= 32'b0;
+            //operand_a_func      <= 32'b0;
+            //operand_b_func      <= 32'b0;
             is_load_func        <= 1'b0;
             is_store_func       <= 1'b0;
             condition_func      <= 3'b111;
+            use_imm_func        <= 1'b0;
+            operand_a_addr_func <= 5'b0;
+            operand_b_addr_func <= 5'b0;
         end else begin
             op_func             <= op_reg;
             imm_func            <= imm_reg;
@@ -215,30 +229,47 @@ module path import h2bp::*;(
             use_fpu_func        <= use_fpu_reg;
             result_addr_func    <= result_addr_reg;
             result_enable_func  <= result_enable_reg;
-            operand_a_func      <= operand_a_reg;
-            operand_b_func      <= (use_imm_reg) ? imm_reg : operand_b_reg;
+            //operand_a_func      <= operand_a_reg;
+            //operand_b_func      <= (use_imm_reg) ? imm_reg : operand_b_reg;
             is_load_func        <= is_load_reg;
             is_store_func       <= is_store_reg;
             condition_func      <= condition_reg;
+            use_imm_func        <= use_imm_reg;
+            operand_a_addr_func <= operand_a_addr;
+            operand_b_addr_func <= (use_imm_reg) ? 5'b0 : operand_b_addr;
         end
     end 
 
+    logic[31:0] operand_a_forward;
+    logic[31:0] operand_b_forward;
+
+    always_comb begin : forwarding
+        operand_a_forward = operand_a_func;
+        operand_b_forward = operand_b_func;
+
+        if(operand_a_addr_func == result_addr_data)
+            operand_a_forward = result_data;
+
+        if(operand_b_addr_func == result_addr_data)
+            operand_b_forward = result_data;
+    end
+
     alu alu(
         .operation(op_func),
-        .operand_a(operand_a_func),
-        .operand_b(operand_b_func),
+        .operand_a(operand_a_forward),
+        .operand_b(operand_b_forward),
         .result   (result_alu),
         .alu_flags
     );
 
     fpu fpu(
         .operation(op_func),
-        .operand_a(operand_a_func),
-        .operand_b(operand_b_func),
+        .operand_a(operand_a_forward),
+        .operand_b(operand_b_forward),
         .result   (result_fpu)
     );
 
-    always_comb begin : branch
+    always_comb begin : branch 
         branch_func = 1'b0;
         if(condition_func == EQ && alu_flags.zero)
             branch_func = 1'b1;
@@ -261,7 +292,7 @@ module path import h2bp::*;(
         else if(use_fpu_func)
             result_func = result_fpu;
         else if(is_load_func | is_store_func)
-            result_func = operand_b_func;
+            result_func = operand_b_forward;
     end
 
     always_ff @(posedge clk) begin : func_data
@@ -269,24 +300,24 @@ module path import h2bp::*;(
             result_addr_data    <= 5'b0;
             result_enable_data  <= 1'b0;
             result_data         <= 32'b0;
-            operand_a_data      <= 32'b0;
+            //operand_a_data      <= 32'b0;
             is_load_data        <= 1'b0;
-            is_store_data       <= 1'b0;
+            //is_store_data       <= 1'b0;
         end else begin
             result_addr_data    <= result_addr_func;
             result_enable_data  <= result_enable_func;
             result_data         <= result_func;
-            operand_a_data      <= operand_a_func;
+            //operand_a_data      <= operand_a_func;
             is_load_data        <= is_load_func;
-            is_store_data       <= is_store_func;
+            //is_store_data       <= is_store_func;
         end
     end 
 
     dmem dmem(
         .clk,
-        .addr(result_data),
-        .write(is_store_data),
-        .data_i(operand_a_data),
+        .addr(result_func),
+        .write(is_store_func),
+        .data_i(operand_a_func),
         .data_o(result_load_data)
     );
 
