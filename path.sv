@@ -1,4 +1,4 @@
-// TODO: MOV, CALL/RET, PUSH/POP + Forwarding/stalling on branches and hazards
+// TODO: MOV, CALL/RET, PUSH/POP
 
 module path import h2bp::*;(
     input   logic       clk,
@@ -115,7 +115,7 @@ module path import h2bp::*;(
         if(rst) begin
             pc <= 32'b0;
         end else if(branch_func) begin
-            pc <= pc + imm_func;
+            pc <= pc + imm_func - 3;
         end else begin
             pc <= pc + 1;
         end
@@ -123,8 +123,10 @@ module path import h2bp::*;(
 
     imem instruction_memory(
         .clk,
+        .rst,
         .pc,
-        .instruction
+        .instruction,
+        .branch     (branch_func)
     );
 
     decoder decoder(
@@ -147,7 +149,7 @@ module path import h2bp::*;(
     );
 
     always_ff @(posedge clk) begin : inst_reg
-        if(rst) begin
+        if(rst || branch_func) begin
             rd_addr_reg             <= 5'b0;
             rs1_addr_reg            <= 5'b0;
             rs2_addr_reg            <= 5'b0;
@@ -188,6 +190,7 @@ module path import h2bp::*;(
 
     registers registers(
         .clk,
+        .rst,
         .operand_a_enable (operand_a_enable_reg),
         .operand_b_enable (operand_b_enable_reg),
         .result_enable    (result_enable_data),
@@ -200,14 +203,15 @@ module path import h2bp::*;(
         .result_addr_func,
         .result_addr_data,
         .result_func,
-        .result_data
+        .result_data,
+        .branch           (branch_func)
     );
 
     assign operand_a_func = operand_a_reg;
     assign operand_b_func = (use_imm_func) ? imm_func : operand_b_reg;
 
     always_ff @(posedge clk) begin : reg_func
-        if(rst) begin
+        if(rst || branch_func) begin
             op_func             <= 3'b0;
             imm_reg             <= 32'b0;
             use_alu_func        <= 1'b0;
@@ -247,10 +251,10 @@ module path import h2bp::*;(
         operand_a_forward = operand_a_func;
         operand_b_forward = operand_b_func;
 
-        if(operand_a_addr_func == result_addr_data)
+        if(operand_a_addr_func == result_addr_data && operand_a_addr_func != 5'b0)
             operand_a_forward = result_data;
 
-        if(operand_b_addr_func == result_addr_data)
+        if(operand_b_addr_func == result_addr_data && operand_b_addr_func != 5'b0)
             operand_b_forward = result_data;
     end
 
