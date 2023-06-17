@@ -11,14 +11,14 @@ module dmem import h2bp::*;(
     output  logic[31:0] data_o
 );
 
-    logic[255:0][31:0]    memory;
+    logic[31:0] memory[31:0];
 
     always_ff @(posedge clk) begin
         if(write) begin
-            memory[addr[7:0]] <= data_i;
+            memory[addr[4:0]] <= data_i;
         end
 
-        data_o <= memory[addr[7:0]];
+        data_o <= memory[addr[4:0]];
     end
 
 endmodule

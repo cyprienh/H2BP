@@ -260,7 +260,7 @@ module path import h2bp::*;(
 
     alu alu(
         .operation(op_func),
-        .operand_a(operand_a_forward),
+        .operand_a((is_load_func || is_store_func) ? imm_func : operand_a_forward),
         .operand_b(operand_b_forward),
         .result   (result_alu),
         .alu_flags
@@ -295,8 +295,6 @@ module path import h2bp::*;(
             result_func = result_alu;
         else if(use_fpu_func)
             result_func = result_fpu;
-        else if(is_load_func | is_store_func)
-            result_func = operand_b_forward;
     end
 
     always_ff @(posedge clk) begin : func_data

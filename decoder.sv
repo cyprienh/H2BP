@@ -71,12 +71,14 @@ module decoder import h2bp::*;(
             // OTHERS
             if(instruction[31:27] inside {[LW:SB]}) begin
                 rd_is_operand_a = 1'b1;
-                result_enable = 1'b1;
                 if(instruction[31:27] == LW) begin
                     is_load = 1'b1;
                 end else if(instruction[31:27] == SW) begin
                     is_store = 1'b1;
                 end
+                use_alu = 1'b1;
+                operation = opADD;
+                immediate = {{16{instruction[16]}}, instruction[16:1]};    // Sign extend
             end else begin
                 // BRANCHES -> if condition != 3'b111 then its a branch
                 condition = instruction[29:27];
