@@ -32,7 +32,10 @@ module imem import h2bp::*;(
                 8:  instruction <= 32'b0;
                 9:  instruction <= 32'b00001000010000000000000000000011;    // add x1,x0,#1
                 10: instruction <= 32'b11000000010000000000000000001111;    // str x1,x0,#7
-                11: instruction <= 32'b11010111111111111111111111110101;    // j #-11
+                11: instruction <= 32'b11010000000000000000000000000011;    // j #3
+                12: instruction <= 32'b0;
+                13: instruction <= 32'b0;
+                14: instruction <= 32'b11011000000000000000000000000011;    // jr x0,#3
                 default: instruction <= 32'b0;
             endcase
         end else begin

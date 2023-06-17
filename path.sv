@@ -1,4 +1,4 @@
-// TODO: MOV, CALL/RET, PUSH/POP
+// TODO: CALL/RET, PUSH/POP
 
 module path import h2bp::*;(
     input   logic       clk,
@@ -29,6 +29,7 @@ module path import h2bp::*;(
     logic       is_load_inst;
     logic       is_store_inst;
     logic       is_jump_inst;
+    logic       is_jump_register_inst;
 
     logic[2:0]  condition_inst;
 
@@ -58,6 +59,7 @@ module path import h2bp::*;(
 
     logic       is_load_reg;
     logic       is_store_reg;
+    logic       is_jump_register_reg;
 
     logic[4:0]  result_addr_reg;
 
@@ -83,6 +85,7 @@ module path import h2bp::*;(
 
     logic       is_load_func;
     logic       is_store_func;
+    logic       is_jump_register_func;
 
     /* verilator lint_off UNUSEDSIGNAL */
     flags       alu_flags;
@@ -119,6 +122,8 @@ module path import h2bp::*;(
             pc <= pc + imm_func - 3;
         end else if(is_jump_inst) begin
             pc <= pc + imm_inst - 1;
+        end else if(is_jump_register_func) begin
+            pc <= result_alu;
         end else begin
             pc <= pc + 1;
         end
@@ -130,7 +135,7 @@ module path import h2bp::*;(
         .pc,
         .instruction,
         .branch     (branch_func),
-        .jump       (is_jump_inst)
+        .jump       (is_jump_inst || is_jump_register_func)
     );
 
     decoder decoder(
@@ -150,11 +155,12 @@ module path import h2bp::*;(
         .is_load            (is_load_inst),
         .is_store           (is_store_inst),
         .is_jump            (is_jump_inst),
+        .is_jump_register   (is_jump_register_inst),
         .condition          (condition_inst)
     );
 
     always_ff @(posedge clk) begin : inst_reg
-        if(rst || branch_func) begin
+        if(rst || branch_func || is_jump_inst || is_jump_register_func) begin
             rd_addr_reg             <= 5'b0;
             rs1_addr_reg            <= 5'b0;
             rs2_addr_reg            <= 5'b0;
@@ -169,6 +175,7 @@ module path import h2bp::*;(
             rd_is_operand_a_reg     <= 1'b0;
             is_load_reg             <= 1'b0;
             is_store_reg            <= 1'b0;
+            is_jump_register_reg    <= 1'b0;
             condition_reg           <= 3'b111;
         end else begin
             rd_addr_reg             <= rd_addr_inst;
@@ -185,6 +192,7 @@ module path import h2bp::*;(
             rd_is_operand_a_reg     <= rd_is_operand_a_inst;
             is_load_reg             <= is_load_inst;
             is_store_reg            <= is_store_inst;
+            is_jump_register_reg    <= is_jump_register_inst;
             condition_reg           <= condition_inst;
         end
     end 
@@ -216,36 +224,34 @@ module path import h2bp::*;(
     assign operand_b_func = (use_imm_func) ? imm_func : operand_b_reg;
 
     always_ff @(posedge clk) begin : reg_func
-        if(rst || branch_func) begin
-            op_func             <= 3'b0;
-            imm_reg             <= 32'b0;
-            use_alu_func        <= 1'b0;
-            use_fpu_func        <= 1'b0;
-            result_addr_func    <= 5'b0;
-            result_enable_func  <= 1'b0;
-            //operand_a_func      <= 32'b0;
-            //operand_b_func      <= 32'b0;
-            is_load_func        <= 1'b0;
-            is_store_func       <= 1'b0;
-            condition_func      <= 3'b111;
-            use_imm_func        <= 1'b0;
-            operand_a_addr_func <= 5'b0;
-            operand_b_addr_func <= 5'b0;
+        if(rst || branch_func || is_jump_register_func) begin
+            op_func                 <= 3'b0;
+            imm_reg                 <= 32'b0;
+            use_alu_func            <= 1'b0;
+            use_fpu_func            <= 1'b0;
+            result_addr_func        <= 5'b0;
+            result_enable_func      <= 1'b0;
+            is_load_func            <= 1'b0;
+            is_store_func           <= 1'b0;
+            is_jump_register_func   <= 1'b0;
+            condition_func          <= 3'b111;
+            use_imm_func            <= 1'b0;
+            operand_a_addr_func     <= 5'b0;
+            operand_b_addr_func     <= 5'b0;
         end else begin
-            op_func             <= op_reg;
-            imm_func            <= imm_reg;
-            use_alu_func        <= use_alu_reg;
-            use_fpu_func        <= use_fpu_reg;
-            result_addr_func    <= result_addr_reg;
-            result_enable_func  <= result_enable_reg;
-            //operand_a_func      <= operand_a_reg;
-            //operand_b_func      <= (use_imm_reg) ? imm_reg : operand_b_reg;
-            is_load_func        <= is_load_reg;
-            is_store_func       <= is_store_reg;
-            condition_func      <= condition_reg;
-            use_imm_func        <= use_imm_reg;
-            operand_a_addr_func <= operand_a_addr;
-            operand_b_addr_func <= (use_imm_reg) ? 5'b0 : operand_b_addr;
+            op_func                 <= op_reg;
+            imm_func                <= imm_reg;
+            use_alu_func            <= use_alu_reg;
+            use_fpu_func            <= use_fpu_reg;
+            result_addr_func        <= result_addr_reg;
+            result_enable_func      <= result_enable_reg;
+            is_load_func            <= is_load_reg;
+            is_store_func           <= is_store_reg;
+            is_jump_register_func   <= is_jump_register_reg;
+            condition_func          <= condition_reg;
+            use_imm_func            <= use_imm_reg;
+            operand_a_addr_func     <= operand_a_addr;
+            operand_b_addr_func     <= (use_imm_reg) ? 5'b0 : operand_b_addr;
         end
     end 
 
@@ -303,20 +309,16 @@ module path import h2bp::*;(
     end
 
     always_ff @(posedge clk) begin : func_data
-        if(rst) begin
+        if(rst || branch_func || is_jump_register_func) begin
             result_addr_data    <= 5'b0;
             result_enable_data  <= 1'b0;
             result_data         <= 32'b0;
-            //operand_a_data      <= 32'b0;
             is_load_data        <= 1'b0;
-            //is_store_data       <= 1'b0;
         end else begin
             result_addr_data    <= result_addr_func;
             result_enable_data  <= result_enable_func;
             result_data         <= result_func;
-            //operand_a_data      <= operand_a_func;
             is_load_data        <= is_load_func;
-            //is_store_data       <= is_store_func;
         end
     end 
 

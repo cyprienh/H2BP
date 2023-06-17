@@ -21,6 +21,7 @@ module decoder import h2bp::*;(
     output  logic       is_load,
     output  logic       is_store,
     output  logic       is_jump,
+    output  logic       is_jump_register,
 
     output  logic[2:0]  condition
 );
@@ -42,6 +43,7 @@ module decoder import h2bp::*;(
         is_load = 1'b0;
         is_store = 1'b0;
         is_jump = 1'b0;
+        is_jump_register = 1'b0;
         condition = 3'b111;
 
         if(instruction[31] == 1'b0) begin
@@ -84,6 +86,14 @@ module decoder import h2bp::*;(
             end else if(instruction[31:27] == J) begin
                 immediate = {{5{instruction[26]}}, instruction[26:0]};
                 is_jump = 1'b1;
+            end else if(instruction[31:27] == JR) begin
+                immediate = {{10{instruction[21]}}, instruction[21:0]};
+                rs1_addr = instruction[26:22];
+                is_jump_register = 1'b1;
+                use_alu = 1'b1;
+                operation = opADD;
+                use_imm = 1'b1;
+                operand_b_enable = 1'b0;
             end else begin
                 // BRANCHES -> if condition != 3'b111 then its a branch
                 condition = instruction[29:27];
