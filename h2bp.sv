@@ -13,8 +13,8 @@ package h2bp;
 
     // Instructions
     typedef enum logic [4:0] {
-        ADD, ADD2, SUB, SUB2, MULT, MULT2, DIV, DIV2, AND, AND2, OR, OR2, LSHIFT, LSHIFT2, RSHIFT, RSHIFT2,
-        BEQ, BNE, BLT, BGT, BLE, BGE, LW, LB, SW, SB, MOV, MOV2, CALL, RET, PUSH, POP
+        ADD, ADD2, SUB, SUB2, MUL, MUL2, DIV, DIV2, AND, AND2, OR, OR2, LS, LS2, RS, RS2,
+        BEQ, BNE, BLT, BGT, BLE, BGE, LW, LB, SW, SB, J, JR, CALL, RET, PUSH, POP
     } instructions;
 
     typedef enum logic [2:0] {

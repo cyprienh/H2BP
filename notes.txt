@@ -6,3 +6,5 @@ load x1,x2,#8
 store x1,x2
 
 beq x1,x2,#7
+
+mov x1,x2 == add x1,x2,x0 ??

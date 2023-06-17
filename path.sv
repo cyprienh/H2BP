@@ -28,6 +28,7 @@ module path import h2bp::*;(
 
     logic       is_load_inst;
     logic       is_store_inst;
+    logic       is_jump_inst;
 
     logic[2:0]  condition_inst;
 
@@ -116,6 +117,8 @@ module path import h2bp::*;(
             pc <= 32'b0;
         end else if(branch_func) begin
             pc <= pc + imm_func - 3;
+        end else if(is_jump_inst) begin
+            pc <= pc + imm_inst - 1;
         end else begin
             pc <= pc + 1;
         end
@@ -126,7 +129,8 @@ module path import h2bp::*;(
         .rst,
         .pc,
         .instruction,
-        .branch     (branch_func)
+        .branch     (branch_func),
+        .jump       (is_jump_inst)
     );
 
     decoder decoder(
@@ -145,6 +149,7 @@ module path import h2bp::*;(
         .rd_is_operand_a    (rd_is_operand_a_inst),
         .is_load            (is_load_inst),
         .is_store           (is_store_inst),
+        .is_jump            (is_jump_inst),
         .condition          (condition_inst)
     );
 

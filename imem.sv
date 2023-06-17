@@ -6,13 +6,14 @@ module imem import h2bp::*;(
 
     output  logic[31:0] instruction,
 
-    input   logic       branch
+    input   logic       branch,
+    input   logic       jump
 );
 
     //logic[255:0][31:0]    memory;
 
     always_ff @(posedge clk) begin
-        if(!(rst || branch)) begin
+        if(!(rst || branch || jump)) begin
             case(pc)
                 0:  instruction <= 32'b00001000010000010101010101010101;    // add x1,x0,#-21846
                 //1:  instruction <= 32'b0;
@@ -31,6 +32,7 @@ module imem import h2bp::*;(
                 8:  instruction <= 32'b0;
                 9:  instruction <= 32'b00001000010000000000000000000011;    // add x1,x0,#1
                 10: instruction <= 32'b11000000010000000000000000001111;    // str x1,x0,#7
+                11: instruction <= 32'b11010111111111111111111111110101;    // j #-11
                 default: instruction <= 32'b0;
             endcase
         end else begin
